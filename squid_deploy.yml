@@ -1,0 +1,90 @@
+---
+- hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Download and add webmin GPG key
+      apt_key:
+          url: https://download.webmin.com/jcameron-key.asc
+          state: present
+          validate_certs: yes
+    - name: Add webmin repository
+      apt_repository:
+          repo: deb https://download.webmin.com/download/repository sarge contrib  
+          state: present 
+          update_cache: yes
+          mode: 0644 
+          validate_certs: yes 
+          filename: 'webmin' 
+    
+    - name: install squid and dependencies packages
+      apt:
+          update_cache: yes
+          name: ['squid','ucarp','drbd-utils','apt-transport-https','webmin','vim','micro-httpd','parted',haproxy,unison]
+          state: latest
+
+    - name: update webmin config for squid module
+      lineinfile:
+          dest: /etc/webmin/squid/config
+          state: present
+          regexp: '{{ item.From }}'
+          line: '{{ item.To }}'          
+      with_items:
+        - {From: "^squid_conf", To: "squid_conf=/etc/squid/squid.conf" }
+        - {From: "^log_dir", To: "log_dir=/var/log/squid" }
+        - {From: "^cache_dir", To: "cache_dir=/var/spool/squid" }
+        - {From: "^pid_file", To: "pid_file=/var/run/squid.pid" }
+        - {From: "^squid_path", To: "squid_path=squid" }
+
+    - name: Read device information (always use unit when probing)
+      parted: device=/dev/sdb unit=MiB
+      register: sdb_info
+    
+    - name: Remove all partitions from disk
+      parted:
+        device: /dev/sdb
+        number: '{{ item.num }}'
+        state: absent
+      loop: '{{ sdb_info.partitions }}'
+      
+    - name: Create partition for vg1
+      parted:
+        device: /dev/sdb
+        number: 1
+        flags: [ lvm ]
+        state: present
+
+    - name: Create volume group
+      lvg:
+          vg: debian-vg1
+          pvs: /dev/sdb1
+          state: present 
+    
+    - name: Delete LV for Squid cache
+      lvol:
+          vg: debian-vg1
+          lv: cache
+          state: absent
+          force: yes
+      
+    - name: create  LV for Squid cache
+      lvol:
+          vg: debian-vg1
+          lv: cache
+          state: present
+          size: 100%FREE
+          active: yes
+
+    - name: format to ext4
+      filesystem:
+          dev: /dev/debian-vg1/cache
+          fstype: ext4
+          force: no 
+          
+    - name: write Squid cache  to fstab
+      mount:
+          state: present
+          path: /var/spool/squid
+          src: /dev/debian-vg1/cache
+          fstype: ext4
+          opts: defaults 

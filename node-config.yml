@@ -1,0 +1,20 @@
+---
+- hosts: all
+  tasks:
+  - name: Configure HA Proxy
+    template: src=haproxy.j2 dest=/etc/haproxy/haproxy.cfg
+
+  - name: Comment out ens33 lines in /etc/network/interfaces
+    lineinfile:
+        path: /etc/network/interfaces
+        state: present
+        regexp: '{{item.From}}'
+        line: '{{item.To}}'
+        backrefs: yes
+      
+    with_items:
+         - { From: '^(allow-hotplug ens33)', To: '#\1'}
+         - { From: '^(iface ens33.*$)', To: '#\1'}
+         
+  - name: Configure UCARP
+    template: src=ucarp.j2 dest=/etc/network/interfaces.d/ucarp

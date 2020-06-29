@@ -1,0 +1,9 @@
+[squid]
+squid ansible_host=192.168.30.129
+#squid1 ansible_host=192.168.30.130
+#squid2 ansible_host=192.168.30.131
+[squid:vars]
+ansible_user=sysadmin
+ansible_ssh_private_key_file=/home/peters/squid.pem
+HA_IP=192.168.30.10
+GATEWAY=192.168.30.2

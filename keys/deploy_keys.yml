@@ -1,0 +1,63 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Deploy to sysadmin
+      authorized_key:
+        user: 'sysadmin' 
+        state: present 
+        key: "{{ lookup('file','/home/peters/squid.pem.pub') }}"
+    - name: install sudo and visudo
+      become: yes
+      become_user: root
+      become_method: su
+      apt:
+        name: 'sudo' 
+        state: latest
+      
+    - name: Make sure we have a 'sudo' group
+      become: yes
+      become_user: root
+      become_method: su
+      group:
+        name: sudo 
+        state: present
+    
+    - name: Add sudoers users to sudo group
+      become: yes
+      become_user: root
+      become_method: su
+      user: name=sysadmin groups=sudo append=yes state=present 
+
+    - pause: seconds=10
+
+    - name: Allow 'sudo' group to have passwordless sudo
+      become: yes
+      become_user: root
+      become_method: su
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        insertafter: '^.*env_reset'
+        line: 'Defaults        lecture="never"'
+
+    - name: Allow 'sudo' group to have passwordless sudo
+      become: yes
+      become_user: root
+      become_method: su
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+    
+    - name: Add IP info to /etc/issue
+      become: yes
+      become_user: root
+      become_method: su
+      lineinfile:
+        dest: /etc/issue
+        state: present
+        insertafter: '^Debian'
+        line: 'IP: \4{ens33}'

@@ -1,0 +1,25 @@
+{% for node in groups['squid'] %}
+iface ens33 inet dhcp
+   ucarp-vid       1
+  
+   # Virtual Server IP
+   ucarp-vip       {{ HA_IP }}
+  
+   # Shared Password
+   ucarp-password  some_password
+  
+   # Advertisement skew
+   ucarp-advskew   1
+  
+   # Advertisement base interval
+   ucarp-advbase   0
+  
+   # Master server
+   ucarp-master    no
+  
+# Virtual interface 
+iface ens33:ucarp inet static
+  address {{ HA_IP }}/24
+  gateway {{ GATEWAY }}
+
+{% endfor %}
