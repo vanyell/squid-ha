@@ -15,10 +15,12 @@ iface ens33 inet dhcp
    ucarp-advbase   0
   
    # Master server
+{% if inventory_hostname == "squid1" %}
+   ucarp-master    yes
+{%else %}
    ucarp-master    no
-  
+{% endif %}
 # Virtual interface 
-auto ens33:ucarp
 iface ens33:ucarp inet static
   address {{ HA_IP }}/24
   gateway {{ GATEWAY }}
