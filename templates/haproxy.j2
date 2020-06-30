@@ -38,7 +38,9 @@ defaults
 
 listen http_proxy 
   bind {{ HA_IP }}:8080
-  mode tcp
+  cookie SERVERID insert indirect nocache 
+  option httpclose 
+  option forwardfor header X-Client 
   balance roundrobin
 {% for node in groups['squid'] %}
   server {{ node }} {{ hostvars[node].ansible_host }}:3128 check
