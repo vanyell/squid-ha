@@ -36,7 +36,8 @@ defaults
         errorfile 503 /etc/haproxy/errors/503.http
         errorfile 504 /etc/haproxy/errors/504.http
 
-listen http_proxy {{ HA_IP }}:3128
+listen http_proxy 
+  bind {{ HA_IP }}:8080
   mode tcp
   balance roundrobin
 {% for node in groups['squid'] %}
