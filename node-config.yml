@@ -18,3 +18,15 @@
          
   - name: Configure UCARP
     template: src=ucarp.j2 dest=/etc/network/interfaces.d/ucarp
+
+  - name: Create UCARP systemd file
+    template: src=ucarp-service.j2 dest=/etc/systemd/system/ucarp.service
+
+  - name: Add to systemd list
+    systemd:
+        name: ucarp.service 
+        enabled: on 
+        daemon_reload: yes
+        state: started
+        
+        
