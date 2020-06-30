@@ -1,4 +1,3 @@
-{% for node in groups['squid'] %}
 iface ens33 inet dhcp
    ucarp-vid       1
   
@@ -21,5 +20,3 @@ iface ens33 inet dhcp
 iface ens33:ucarp inet static
   address {{ HA_IP }}/24
   gateway {{ GATEWAY }}
-
-{% endfor %}
