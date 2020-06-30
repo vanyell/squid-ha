@@ -39,8 +39,13 @@ defaults
 listen http_proxy 
   bind {{ HA_IP }}:8080
   cookie SERVERID insert indirect nocache 
+  option http-keep-alive
   option httpclose 
-  option forwardfor header X-Client 
+  option forwardfor 
+  http-request set-header X-Forwarded-Proto http if !https
+  http-request set-header X-Forwarded-Proto https if https
+  timeout client 30000
+  http-request set-header X-Client-IP %[req.hdr_ip(X-Forwarded-For)]
   balance roundrobin
 {% for node in groups['squid'] %}
   server {{ node }} {{ hostvars[node].ansible_host }}:3128 check
