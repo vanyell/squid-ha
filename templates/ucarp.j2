@@ -1,3 +1,4 @@
+auto ens33
 iface ens33 inet dhcp
    ucarp-vid       1
   
@@ -17,6 +18,7 @@ iface ens33 inet dhcp
    ucarp-master    no
   
 # Virtual interface 
+auto ens33:ucarp
 iface ens33:ucarp inet static
   address {{ HA_IP }}/24
   gateway {{ GATEWAY }}
