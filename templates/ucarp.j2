@@ -1,5 +1,7 @@
 auto ens33
-iface ens33 inet dhcp
+iface ens33 inet static
+   address {{ hostvars[inventory_hostname].ansible_host }}
+   gateway {{ GATEWAY }}
    ucarp-vid       1
   
    # Virtual Server IP
