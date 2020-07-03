@@ -1,5 +1,6 @@
 ---
 - hosts: all
+  become: yes
   tasks:
   - name: Configure HA Proxy
     template: src=haproxy.j2 dest=/etc/haproxy/haproxy.cfg
@@ -16,7 +17,7 @@
          - { From: '^(allow-hotplug ens33)', To: '#\1'}
          - { From: '^(iface ens33.*$)', To: '#\1'}
          
-  - name: Configure UCARP
+  - name: Configure UCARP and static addressing
     template: src=ucarp.j2 dest=/etc/network/interfaces.d/ucarp
 
   - name: Create UCARP systemd file
