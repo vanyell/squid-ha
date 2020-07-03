@@ -18,7 +18,8 @@
       authorized_key:
         user: 'sysadmin' 
         state: present 
-        key: "{{ lookup('file','/home/soc4/squid.pem.pub') }}"
+        key: "{{ lookup('file', ansible_ssh_public_key_file ) }}"
+
     - name: install sudo and visudo
       apt:
         name: 'sudo' 
@@ -76,4 +77,4 @@
         dest: ~/.ssh/known_hosts
         create: yes
         state: present
-        line: "{{ lookup('pipe', 'ssh-keyscan -trsa ' + hostvars[inventory_hostname].ansible_host) }}"
+        line: "{{ lookup('pipe', 'ssh-keyscan ' + hostvars[inventory_hostname].ansible_host) }}"
