@@ -3,6 +3,10 @@
   gather_facts: yes
   become: yes
   tasks:
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
     - name: Download and add webmin GPG key
       apt_key:
           url: https://download.webmin.com/jcameron-key.asc
@@ -36,6 +40,9 @@
         - {From: "^pid_file", To: "pid_file=/var/run/squid.pid" }
         - {From: "^squid_path", To: "squid_path=squid" }
 
+    - name: drbdadm down in remote shell
+      shell: drbdadm down drbd0 >> /root/linbit-ans-drbd.log
+   
     - name: Read device information (always use unit when probing)
       parted: device=/dev/sdb unit=MiB
       register: sdb_info
@@ -60,24 +67,60 @@
           pvs: /dev/sdb1
           state: present 
     
-    - name: Delete LV for Squid cache
+    - name: Delete LV for DRBD
       lvol:
           vg: debian-vg1
-          lv: cache
+          lv: drbdvol
           state: absent
           force: yes
       
-    - name: create  LV for Squid cache
+    - name: create  LV for DRBD
       lvol:
           vg: debian-vg1
-          lv: cache
+          lv: drbdvol
           state: present
           size: 100%FREE
           active: yes
 
+    - name: check if drbd0 already present
+      command: bash -c "drbdadm sh-dev all | grep -q drbd0; echo $?"
+      register: drbd0_exists
+
+    - name: configure DRBD device
+      template: src=drbd.j2 dest=/etc/drbd.d/drbd0.res
+      register: drbd0_config
+
+    - name: drbdadm create-md in remote shell
+      shell: drbdadm create-md drbd0 --force >> /root/linbit-ans-drbd.log
+      when: drbd0_exists.stdout == "1"
+
+    - name: drbdadm up in remote shell
+      shell: drbdadm up drbd0 >> /root/linbit-ans-drbd.log
+      when: drbd0_exists.stdout == "1"
+
+    - name: skip DRBD initial sync
+      run_once: true
+      shell: bash -c 'while [ $(drbdadm cstate drbd0) != "Connected" ]; do sleep 1s; done; drbdadm new-current-uuid drbd0 --clear-bitmap' >> /root/linbit-ans-drbd.log
+      when: drbd0_exists.stdout == "1"
+ 
+  # Adjust if configuration changed as catch all
+    - name: drbdadm adjust in remote shell
+      shell: drbdadm adjust drbd0 >> /root/linbit-ans-drbd.log
+      when: drbd0_config.changed
+
+    - name: drbdadm primary in remote shell
+      delegate_to: "squid1"
+      shell: drbdadm primary drbd0 >> /root/linbit-ans-drbd.log      
+
+    - name: Start DRBD service
+      systemd:
+          name: drbd
+          enabled: yes 
+          state: restarted 
+
     - name: format to ext4
       filesystem:
-          dev: /dev/debian-vg1/cache
+          dev: /dev/drbd0
           fstype: ext4
           force: no 
           
@@ -85,6 +128,6 @@
       mount:
           state: present
           path: /var/spool/squid
-          src: /dev/debian-vg1/cache
+          src: /dev/drbd0
           fstype: ext4
           opts: defaults 
