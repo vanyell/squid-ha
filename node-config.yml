@@ -2,11 +2,6 @@
 - hosts: all
   become: yes
   tasks:
-
-  - name: Set hostname
-    hostname:
-        name: "{{ inventory_hostname }}"
-
   - name: Configure HA Proxy
     template: src=haproxy.j2 dest=/etc/haproxy/haproxy.cfg
 
@@ -34,5 +29,5 @@
         enabled: on 
         daemon_reload: yes
         state: started
-        
+  
         
