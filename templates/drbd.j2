@@ -1,0 +1,16 @@
+resource drbd0 {
+  meta-disk internal;
+  device /dev/drbd0;
+  syncer {
+    verify-alg sha1;
+  }
+  net {
+    allow-two-primaries;
+  }
+  
+{% for node in groups['squid'] %}
+  on {{ node }} {
+    disk /dev/debian-vg1/drbdvol;
+    address {{hostvars[node].ansible_host}}:7789;
+  }
+{% endfor %}  
