@@ -37,6 +37,16 @@
         - {From: "^pid_file", To: "pid_file=/var/run/squid.pid" }
         - {From: "^squid_path", To: "squid_path=squid" }
 
+    - name: Stop any running Squid process
+      systemd:
+          name: squid
+          state: stopped
+
+    - name: Unmount /var/spool/squid
+      mount:
+          state: unmounted
+          path: /var/spool/squid
+
     - name: Read device information (always use unit when probing)
       parted: device=/dev/sdb unit=MiB
       register: sdb_info
@@ -76,17 +86,23 @@
           size: 100%FREE
           active: yes
 
-    - name: write Squid cache  to fstab
-      mount:
-          state: present
-          path: /var/spool/squid
-          src: /dev/debian-vg1/cache
-          fstype: ext4
-          opts: defaults 
-
     - name: format to ext4
       filesystem:
           dev: /dev/debian-vg1/cache
           fstype: ext4
           force: no 
-         
+
+    - name: write Squid cache  to fstab
+      mount:
+          state: mounted
+          path: /var/spool/squid
+          src: /dev/debian-vg1/cache
+          fstype: ext4
+          opts: defaults 
+
+    - name: Change owner /var/spool/squid
+      file:
+          path: /var/spool/squid
+          mode: 0777
+          state: directory
+          
