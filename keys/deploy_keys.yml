@@ -78,3 +78,15 @@
         create: yes
         state: present
         line: "{{ lookup('pipe', 'ssh-keyscan ' + hostvars[inventory_hostname].ansible_host) }}"
+
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+    
+    - name: add to /etc/hosts
+      lineinfile:
+          dest: /etc/hosts
+          state: present
+          
+          line: "{{ hostvars[item].ansible_host }}  {{ item }}"          
+      loop: "{{ groups['squid']}}"
