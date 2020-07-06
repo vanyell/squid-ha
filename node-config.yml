@@ -2,6 +2,17 @@
 - hosts: all
   become: yes
   tasks:
+  - name: set cache dir
+    lineinfile:
+      path: /etc/squid/squid.conf
+      state: present
+      regexp: '^#cache_dir ufs (.*$)'
+      line: 'cache_dir aufs \1'
+      backrefs: yes
+
+  - name: Init Squid cache
+    shell: "squid -z"
+
   - name: Configure HA Proxy
     template: src=haproxy.j2 dest=/etc/haproxy/haproxy.cfg
 
