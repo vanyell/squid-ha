@@ -12,6 +12,15 @@
   - name: Squid config
     template: src=squid.j2 dest=/etc/squid/squid.conf
   
+  - name: Allow HA Proxy to bind to non-existing IP
+    sysctl:
+        name: net.ipv4.ip_nonlocal_bind
+        reload: yes 
+        state: present
+        sysctl_set: yes
+        sysctl_file: /etc/sysctl.conf 
+        value: 1
+
   - name: Configure HA Proxy
     template: src=haproxy.j2 dest=/etc/haproxy/haproxy.cfg
 
@@ -39,6 +48,13 @@
         enabled: on 
         daemon_reload: yes
         state: started
+
+  - name: Start squid
+    systemd:
+      name: squid
+      state: started
+
+  - pause: minutes=2
 
   - name: start HAproxy
     systemd:
