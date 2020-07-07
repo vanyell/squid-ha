@@ -36,14 +36,26 @@ defaults
         errorfile 503 /etc/haproxy/errors/503.http
         errorfile 504 /etc/haproxy/errors/504.http
 
+listen stats
+    bind *:9000
+    stats enable
+    stats hide-version
+    stats uri /stats
+    stats admin if LOCALHOST
+    stats auth haproxy:Lostp@1ss
+
 listen http_proxy 
   bind {{ HA_IP }}:8080
   cookie SERVERID insert indirect nocache 
+  acl http  ssl_fc,not
+  acl https ssl_fc
+  http-request set-header X-Forwarded-Protocol http if http
+  http-request set-header X-Forwarded-Protocol https if https
   option http-keep-alive
   option httpclose 
   option forwardfor 
   timeout client 30000
-  http-request set-header X-Client-IP %[req.hdr_ip(X-Forwarded-For)]
+  http-request set-header X-Forwarded-For %[src]
   balance roundrobin
 {% for node in groups['squid'] %}
   server {{ node }} {{ hostvars[node].ansible_host }}:3128 check
