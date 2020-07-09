@@ -21,7 +21,7 @@
     - name: install squid and dependencies packages
       apt:
           update_cache: yes
-          name: ['squid','ucarp','apt-transport-https','webmin','vim','micro-httpd','parted',haproxy,unison]
+          name: ['squid','ucarp','apt-transport-https','webmin','vim','lighttpd','parted',haproxy,unison]
           state: latest
 
     - name: update webmin config for squid module
