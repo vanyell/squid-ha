@@ -60,6 +60,8 @@
     systemd:
       name: haproxy
       state: started
-    
+  
+  - name: unison default profile
+    template: src=unison.j2 dest=/home/root/.unison/default.prf
   
         
