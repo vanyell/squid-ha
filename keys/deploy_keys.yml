@@ -18,7 +18,11 @@
       authorized_key:
         user: 'sysadmin' 
         state: present 
-        key: "{{ lookup('file', ansible_ssh_public_key_file ) }}"
+        key: "{{ lookup('file', squid_public_key_file ) }}"
+
+    - name: Generate root ssh keys
+      openssh_keypair:
+        path: /root/.ssh/id_rsa
 
     - name: install sudo and visudo
       apt:
