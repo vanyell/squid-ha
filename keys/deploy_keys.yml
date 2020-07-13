@@ -20,6 +20,11 @@
         state: present 
         key: "{{ lookup('file', squid_public_key_file ) }}"
 
+    - name: Root SSH dir
+      file:
+        path: /root/.ssh
+        state: directory
+          
     - name: Generate root ssh keys
       openssh_keypair:
         path: /root/.ssh/id_rsa
@@ -91,6 +96,5 @@
       lineinfile:
           dest: /etc/hosts
           state: present
-          
           line: "{{ hostvars[item].ansible_host }}  {{ item }}"          
       loop: "{{ groups['squid']}}"
