@@ -1,5 +1,5 @@
-auto ens33
-iface ens33 inet static
+auto {{ NIC }}
+iface {{ NIC }} inet static
    address {{ hostvars[inventory_hostname].ansible_host }}
    gateway {{ GATEWAY }}
    ucarp-vid       1
@@ -24,6 +24,6 @@ iface ens33 inet static
    ucarp-advbase   1
 {% endif %}
 # Virtual interface 
-iface ens33:ucarp inet static
+iface {{ NIC }}:ucarp inet static
   address {{ HA_IP }}/24
   gateway {{ GATEWAY }}
