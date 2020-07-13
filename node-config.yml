@@ -33,8 +33,8 @@
         backrefs: yes
       
     with_items:
-         - { From: '^(allow-hotplug ens33)', To: '#\1'}
-         - { From: '^(iface ens33.*$)', To: '#\1'}
+         - { From: '^(allow-hotplug {{NIC}})', To: '#\1'}
+         - { From: '^(iface {{NIC}}.*$)', To: '#\1'}
          
   - name: Configure UCARP and static addressing
     template: src=ucarp.j2 dest=/etc/network/interfaces.d/ucarp
@@ -54,14 +54,35 @@
       name: squid
       state: started
 
-  - pause: minutes=2
-
   - name: start HAproxy
     systemd:
       name: haproxy
       state: started
+
+  - name: Root unison dir
+    file:
+        path: /root/.unison/
+        state: directory
   
   - name: unison default profile
-    template: src=unison.j2 dest=/home/root/.unison/default.prf
+    template: src=unison.j2 dest=/root/.unison/default.prf
+    when: 
+
+  - name: Fetch the keyfile from the node to master
+    tags: run
+    fetch: 
+      src: "~/.ssh/id_rsa.pub"
+      dest: "buffer/{{ansible_hostname}}-id_rsa.pub"
+      flat: yes
+
+  - name: Copy the key add to authorized_keys using Ansible module
+    tags: runcd
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file','buffer/{{item}}-id_rsa.pub')}}"
+    when: "{{ item != ansible_hostname }}"
+    with_items: 
+      - "{{ groups['squid'] }}"       
   
         
