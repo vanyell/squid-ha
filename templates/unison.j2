@@ -1,6 +1,11 @@
 # Roots of the synchronization
 root = /
-root = ssh://node//
+{% for node in groups['squid'] %}
+{% if node != inventory_hostname %}
+root = ssh://{{ node }}//
+{% endif %}
+{% endfor %}
+
 
 # Paths to synchronize
 path = var/www/html/proxy.pac
