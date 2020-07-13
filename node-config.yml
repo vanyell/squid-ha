@@ -85,4 +85,26 @@
     with_items: 
       - "{{ groups['squid'] }}"       
   
+  - name: Exchange root pub key between nodes
+    known_hosts:
+        name: "{{ item }}"
+        path: /root/.ssh/known_hosts 
+        state: present # not required. choices: present;absent. I(present) to add the host key, I(absent) to remove it.
+        key: "{{ lookup('pipe', 'ssh-keyscan ' + item ) }}"    
+    when: "{{ item != ansible_hostname }}"
+    with_items: 
+      - "{{ groups['squid'] }}"       
+  
+  - name: Cron job to run unison
+    cron:
+        name: 'Unison sync job'
+        month: '*' 
+        disabled: no 
+        job: 'sleep $[ ( $RANDOM % 60 ) + 1 ]s && /usr/bin/unison'        
+        day: '*' 
+        minute: '*' 
+        hour: '*' 
+        state: present
+        weekday: '*'         
+        
         
