@@ -10,7 +10,7 @@
       become: no
       delegate_to: localhost
       known_hosts:
-        name: "{{ hostvars[inventory_hostname].ansible_host }}"
+        name: "{{ inventory_hostname }}"
         state: absent   
 
     - name: Deploy to sysadmin
