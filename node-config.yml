@@ -107,4 +107,5 @@
         state: present
         weekday: '*'         
         
-        
+  - name: generate proxy pac file
+    template: src=proxy_pac.j2 dest=/var/www/html/proxy.pac
