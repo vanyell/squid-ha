@@ -1,5 +1,7 @@
-auto ens33
-iface ens33 inet dhcp
+auto {{ NIC }}
+iface {{ NIC }} inet static
+   address {{ hostvars[inventory_hostname].ansible_host }}
+   gateway {{ GATEWAY }}
    ucarp-vid       1
   
    # Virtual Server IP
@@ -10,17 +12,18 @@ iface ens33 inet dhcp
   
    # Advertisement skew
    ucarp-advskew   1
-  
+{% if inventory_hostname == "squid1" %} 
    # Advertisement base interval
    ucarp-advbase   0
   
    # Master server
-{% if inventory_hostname == "squid1" %}
+
    ucarp-master    yes
 {%else %}
    ucarp-master    no
+   ucarp-advbase   1
 {% endif %}
 # Virtual interface 
-iface ens33:ucarp inet static
+iface {{ NIC }}:ucarp inet static
   address {{ HA_IP }}/24
   gateway {{ GATEWAY }}

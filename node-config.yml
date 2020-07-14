@@ -1,6 +1,26 @@
 ---
 - hosts: all
+  become: yes
   tasks:
+  - name: Backup default Squid config
+    copy:
+      src: /etc/squid/squid.conf
+      dest: /etc/squid/squid.conf.orig
+      backup: yes
+      remote_src: yes
+
+  - name: Squid config
+    template: src=squid.j2 dest=/etc/squid/squid.conf
+  
+  - name: Allow HA Proxy to bind to non-existing IP
+    sysctl:
+        name: net.ipv4.ip_nonlocal_bind
+        reload: yes 
+        state: present
+        sysctl_set: yes
+        sysctl_file: /etc/sysctl.conf 
+        value: 1
+
   - name: Configure HA Proxy
     template: src=haproxy.j2 dest=/etc/haproxy/haproxy.cfg
 
@@ -13,10 +33,10 @@
         backrefs: yes
       
     with_items:
-         - { From: '^(allow-hotplug ens33)', To: '#\1'}
-         - { From: '^(iface ens33.*$)', To: '#\1'}
+         - { From: '^(allow-hotplug {{NIC}})', To: '#\1'}
+         - { From: '^(iface {{NIC}}.*$)', To: '#\1'}
          
-  - name: Configure UCARP
+  - name: Configure UCARP and static addressing
     template: src=ucarp.j2 dest=/etc/network/interfaces.d/ucarp
 
   - name: Create UCARP systemd file
@@ -28,5 +48,63 @@
         enabled: on 
         daemon_reload: yes
         state: started
+
+  - name: Start squid
+    systemd:
+      name: squid
+      state: started
+
+  - name: start HAproxy
+    systemd:
+      name: haproxy
+      state: started
+
+  - name: Root unison dir
+    file:
+        path: /root/.unison/
+        state: directory
+  
+  - name: unison default profile
+    template: src=unison.j2 dest=/root/.unison/default.prf
+    when: 
+
+  - name: Fetch the keyfile from the node to master
+    tags: run
+    fetch: 
+      src: "~/.ssh/id_rsa.pub"
+      dest: "buffer/{{ansible_hostname}}-id_rsa.pub"
+      flat: yes
+
+  - name: Copy the key add to authorized_keys using Ansible module
+    tags: runcd
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file','buffer/{{item}}-id_rsa.pub')}}"
+    when: "{{ item != ansible_hostname }}"
+    with_items: 
+      - "{{ groups['squid'] }}"       
+  
+  - name: Exchange root pub key between nodes
+    known_hosts:
+        name: "{{ item }}"
+        path: /root/.ssh/known_hosts 
+        state: present # not required. choices: present;absent. I(present) to add the host key, I(absent) to remove it.
+        key: "{{ lookup('pipe', 'ssh-keyscan ' + item ) }}"    
+    when: "{{ item != ansible_hostname }}"
+    with_items: 
+      - "{{ groups['squid'] }}"       
+  
+  - name: Cron job to run unison
+    cron:
+        name: 'Unison sync job'
+        month: '*' 
+        disabled: no 
+        job: 'sleep $[ ( $RANDOM % 60 ) + 1 ]s && /usr/bin/unison'        
+        day: '*' 
+        minute: '*' 
+        hour: '*' 
+        state: present
+        weekday: '*'         
         
         

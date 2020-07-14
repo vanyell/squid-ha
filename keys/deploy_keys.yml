@@ -1,40 +1,48 @@
 ---
 - hosts: all
   gather_facts: no
+  become: yes
+  become_user: root
+  become_method: su
+
   tasks:
+    - name: Remove old known hosts entries
+      become: no
+      delegate_to: localhost
+      known_hosts:
+        name: "{{ hostvars[inventory_hostname].ansible_host }}"
+        state: absent   
+
     - name: Deploy to sysadmin
+      become: no
       authorized_key:
         user: 'sysadmin' 
         state: present 
-        key: "{{ lookup('file','/home/peters/squid.pem.pub') }}"
+        key: "{{ lookup('file', squid_public_key_file ) }}"
+
+    - name: Root SSH dir
+      file:
+        path: /root/.ssh
+        state: directory
+          
+    - name: Generate root ssh keys
+      openssh_keypair:
+        path: /root/.ssh/id_rsa
+
     - name: install sudo and visudo
-      become: yes
-      become_user: root
-      become_method: su
       apt:
         name: 'sudo' 
         state: latest
       
     - name: Make sure we have a 'sudo' group
-      become: yes
-      become_user: root
-      become_method: su
       group:
         name: sudo 
         state: present
     
     - name: Add sudoers users to sudo group
-      become: yes
-      become_user: root
-      become_method: su
       user: name=sysadmin groups=sudo append=yes state=present 
 
-    - pause: seconds=10
-
     - name: Allow 'sudo' group to have passwordless sudo
-      become: yes
-      become_user: root
-      become_method: su
       lineinfile:
         dest: /etc/sudoers
         state: present
@@ -42,9 +50,6 @@
         line: 'Defaults        lecture="never"'
 
     - name: Allow 'sudo' group to have passwordless sudo
-      become: yes
-      become_user: root
-      become_method: su
       lineinfile:
         dest: /etc/sudoers
         state: present
@@ -53,11 +58,43 @@
         validate: '/usr/sbin/visudo -cf %s'
     
     - name: Add IP info to /etc/issue
-      become: yes
-      become_user: root
-      become_method: su
       lineinfile:
         dest: /etc/issue
         state: present
         insertafter: '^Debian'
         line: 'IP: \4{ens33}'
+
+    - name: Set delete file wildcard for ssh host keys
+      find:
+        paths: /etc/ssh
+        patterns: "ssh_host*key*"
+      register: wildcard_files_to_delete
+
+    - name: Delete ssh host keys
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ wildcard_files_to_delete.files }}"    
+    
+    - name: Generate new ssh host key
+      command: /usr/bin/ssh-keygen -A
+      
+    - name: Ensure ssh host key known
+      become: no
+      delegate_to: localhost
+      lineinfile:
+        dest: ~/.ssh/known_hosts
+        create: yes
+        state: present
+        line: "{{ lookup('pipe', 'ssh-keyscan ' + hostvars[inventory_hostname].ansible_host) }}"
+
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+    
+    - name: add to /etc/hosts
+      lineinfile:
+          dest: /etc/hosts
+          state: present
+          line: "{{ hostvars[item].ansible_host }}  {{ item }}"          
+      loop: "{{ groups['squid']}}"
