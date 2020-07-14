@@ -47,18 +47,18 @@
         name: ucarp.service 
         enabled: on 
         daemon_reload: yes
-        state: started
+        state: restarted
 
   - name: Start squid
     systemd:
       name: squid
-      state: started
+      state: restarted
 
   - name: start HAproxy
     systemd:
       name: haproxy
-      state: started
-
+      state: restarted
+      
   - name: Root unison dir
     file:
         path: /root/.unison/
