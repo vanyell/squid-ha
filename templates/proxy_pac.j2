@@ -3,7 +3,7 @@ function FindProxyForURL(url, host) {
 // If the hostname matches, send direct.
     if (dnsDomainIs(host, "intranet.domain.com") ||
         shExpMatch(host, "(*.google.com|google.com)"))
-        return "PROXY 192.168.237.10:8080";
+        return "PROXY {{ HA_IP }}:8080";
  
 // If the protocol or URL matches, send direct.
     if (url.substring(0, 4)=="ftp:" ||
