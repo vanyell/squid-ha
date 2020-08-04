@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/ucarp --interface=ens33 --pass=some_password --srcip={{ hostvars[inventory_hostname].ansible_host }} --vhid=1 --addr={{ HA_IP }} --shutdown --preempt --upscript=/usr/share/ucarp/vip-up --downscript=/usr/share/ucarp/vip-down -B
+ExecStart=/usr/sbin/ucarp --interface={{ NIC }} --pass=some_password --srcip={{ hostvars[inventory_hostname].ansible_host }} --vhid=1 --addr={{ HA_IP }} --shutdown --preempt --upscript=/usr/share/ucarp/vip-up --downscript=/usr/share/ucarp/vip-down -B
 RemainAfterExit=yes
 
 [Install]
